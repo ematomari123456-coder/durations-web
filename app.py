@@ -3,7 +3,8 @@ from firebase_admin import credentials, initialize_app, firestore
 from datetime import datetime, timedelta, date
 
 # ========== FIREBASE INIT ==========
-cred = credentials.Certificate("serviceAccountKey.json")
+service_key_path = "/etc/secrets/serviceAccountKey.json"
+cred = credentials.Certificate(service_key_path)
 try:
     initialize_app(cred)
 except:
