@@ -3,7 +3,7 @@ from firebase_admin import credentials, initialize_app, firestore
 from datetime import datetime, timedelta, date
 
 # ========== FIREBASE INIT ==========
-service_key_path = "/etc/secrets/serviceAccountKey.json"
+service_key_path = "/home/eman2411/durations-web/serviceAccountKey.json"
 cred = credentials.Certificate(service_key_path)
 try:
     initialize_app(cred)
@@ -17,27 +17,23 @@ COLLECTION = "durations_table"
 app = Flask(__name__)
 
 # ========== CONSTANTS ==========
-WEEKENDS = [4, 5]  # Friday=4, Saturday=5 (weekday: Monday=0)
+WEEKENDS = [4, 5]  # Friday=4, Saturday=5
 
 # ========== FUNCTIONS ==========
 
 def calculate(judgment_date, deadline_days, start_same_day):
-    # 1) Start date
     if start_same_day:
         start_date = judgment_date
     else:
         start_date = judgment_date + timedelta(days=1)
 
-    # 2) Preliminary end date
     end_date = start_date + timedelta(days=deadline_days - 1)
 
-    # 3) Extend if weekend
     extended = False
     while end_date.weekday() in WEEKENDS:
         end_date = end_date + timedelta(days=1)
         extended = True
 
-    # 4) Remaining days
     today = date.today()
 
     if today > end_date:
@@ -57,22 +53,19 @@ def calculate(judgment_date, deadline_days, start_same_day):
 def index():
     result = None
 
-    # fetch LOV list with doc IDs
     docs = db.collection(COLLECTION).where("is_active", "==", True).stream()
     lov_list = [{"id": doc.id, **doc.to_dict()} for doc in docs]
 
     if request.method == "POST":
-        doc_id = request.form.get("lov_type")  # <-- ID not text
+        doc_id = request.form.get("lov_type")
         jd = request.form.get("judgment_date")
 
         if not doc_id or not jd:
             return render_template("index.html", lov_list=lov_list, result="missing")
 
-        # get record by document ID
         record = db.collection(COLLECTION).document(doc_id).get()
         data = record.to_dict()
 
-        # read values
         deadline_days = data['deadline_days']
         start_same_day = data['start_same_day']
         judgment_date = datetime.strptime(jd, "%Y-%m-%d").date()
@@ -92,6 +85,4 @@ def index():
 
     return render_template("index.html", lov_list=lov_list, result=result)
 
-# ========== RUN APP ==========
-if __name__ == "__main__":
-    app.run(debug=True)
+# لا نستخدم app.run على PythonAnywhere
